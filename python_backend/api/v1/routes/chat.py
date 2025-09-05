@@ -378,17 +378,20 @@ async def send_session_message(session_id: str, request: SessionChatRequest):
             })
         
         # Process message with RAG pipeline
-        enhanced_query = f"""Context from session files:
-
-{chr(10).join([f"File: {f['path']} (Branch: {f['branch']})\nContent:\n{f['content']}\n" + "-" * 50 for f in context_files])}
-
-User Question: {request.message}
-
-Please provide a detailed response based on the code and files provided above. 
-- Reference specific file names and line numbers where applicable
-- Include relevant code snippets with proper citations
-- Provide confidence scores for your responses
-- If context is insufficient, clearly state what additional information would be helpful"""
+        enhanced_query = (
+            "Context from session files:\n\n"
+            + "\n".join([
+                "File: {} (Branch: {})\nContent:\n{}\n{}".format(
+                    f['path'], f['branch'], f['content'], '-' * 50
+                ) for f in context_files
+            ])
+            + f"\n\nUser Question: {request.message}\n\n"
+            + "Please provide a detailed response based on the code and files provided above.\n"
+              "- Reference specific file names and line numbers where applicable\n"
+              "- Include relevant code snippets with proper citations\n"
+              "- Provide confidence scores for your responses\n"
+              "- If context is insufficient, clearly state what additional information would be helpful"
+        )
 
         # Get conversation history for context
         conversation_history = session_manager.get_session_messages(session_id, limit=10)
@@ -772,47 +775,52 @@ async def chat_with_files(request: Dict[str, Any]):
         file_contexts = []
         for file_data in validated_files:
             if file_data.get('error'):
-                file_context = f"""File: {file_data['path']} (ERROR: {file_data['content']})
-Repository: {file_data['repository_id']}
-Branch: {file_data['branch']}
-{'-' * 80}"""
+                file_context = (
+                    "File: {} (ERROR: {})\nRepository: {}\nBranch: {}\n{}".format(
+                        file_data['path'],
+                        file_data['content'],
+                        file_data['repository_id'],
+                        file_data['branch'],
+                        '-' * 80
+                    )
+                )
             else:
-                file_context = f"""File: {file_data['path']}
-Name: {file_data['name']}
-Repository: {file_data['repository_id']}
-Branch: {file_data['branch']}
-Language: {file_data['language']}
-Type: {file_data['file_type']}
-URL: {file_data['url']}
-Raw URL: {file_data['raw_url']}
-Size: {file_data['size']} characters
-Last Modified: {file_data['last_modified']}
-Owner: {file_data['owner']}
-Repo: {file_data['repo']}
-
-Content:
-{file_data['content']}
-{'-' * 80}"""
+                file_context = (
+                    "File: {}\nName: {}\nRepository: {}\nBranch: {}\nLanguage: {}\nType: {}\nURL: {}\nRaw URL: {}\nSize: {} characters\nLast Modified: {}\nOwner: {}\nRepo: {}\n\nContent:\n{}\n{}".format(
+                        file_data['path'],
+                        file_data['name'],
+                        file_data['repository_id'],
+                        file_data['branch'],
+                        file_data['language'],
+                        file_data['file_type'],
+                        file_data['url'],
+                        file_data['raw_url'],
+                        file_data['size'],
+                        file_data['last_modified'],
+                        file_data['owner'],
+                        file_data['repo'],
+                        file_data['content'],
+                        '-' * 80
+                    )
+                )
             file_contexts.append(file_context)
         
         if file_contexts:
             context_sources.append("Current conversation files:\n\n" + "\n".join(file_contexts))
         
-        # Combine all context sources
+                # Combine all context sources
         combined_context = "\n\n".join(context_sources)
-        
-        enhanced_query = f"""Context Information:
-
-{combined_context}
-
-User Question: {message}
-
-Please provide a detailed response based on the context information above. 
-- Reference specific file names and line numbers where applicable
-- Include relevant code snippets with proper citations
-- Provide confidence scores for your responses
-- If context is insufficient, clearly state what additional information would be helpful
-- Use both the knowledge base and current file content to provide accurate and comprehensive answers"""
+        enhanced_query = (
+                        "Context Information:\n\n"
+                        + combined_context
+                        + f"\n\nUser Question: {message}\n\n"
+                        + "Please provide a detailed response based on the context information above.\n"
+                            "- Reference specific file names and line numbers where applicable\n"
+                            "- Include relevant code snippets with proper citations\n"
+                            "- Provide confidence scores for your responses\n"
+                            "- If context is insufficient, clearly state what additional information would be helpful\n"
+                            "- Use both the knowledge base and current file content to provide accurate and comprehensive answers"
+                )
 
         # STEP 4: Create enhanced task for the intelligent code chat agent
         from agents.base.base_agent import AgentTask

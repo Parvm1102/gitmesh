@@ -225,17 +225,14 @@ class EnhancedResponseGenerator:
         try:
             # Create a prompt that asks for JSON output
             system_prompt = self._get_system_prompt(agent_type, structured=True)
-            prompt = f"""Based on the following context, provide a response in valid JSON format.
-
-Context:
-{context}
-
-Query: {query}
-
-Please respond with a valid JSON object that matches this structure:
-{self._get_json_schema(response_model)}
-
-Response (JSON only):"""
+            prompt = (
+                "Based on the following context, provide a response in valid JSON format.\n\n"
+                "Context:\n{}\n\nQuery: {}\n\nPlease respond with a valid JSON object that matches this structure:\n{}\n\nResponse (JSON only):".format(
+                    context,
+                    query,
+                    self._get_json_schema(response_model)
+                )
+            )
 
             # Generate response using LiteLLM
             llm_request = LLMRequest(
@@ -850,20 +847,19 @@ Response (JSON only):"""
             # Prepare code context
             code_context = self._prepare_code_context(code_chunks)
             
-            # Create analysis prompt
-            prompt = f"""Please provide a comprehensive analysis of the following code:
-
-{code_context}
-
-Analysis Requirements:
-1. Provide a concise summary of what the code does
-2. Explain the detailed functionality
-3. Identify key programming concepts used
-4. Assess complexity level (simple/moderate/complex)
-5. Identify potential issues or areas for improvement
-6. Provide practical usage examples
-
-Code Analysis:"""
+                        # Create analysis prompt
+            prompt = (
+                                "Please provide a comprehensive analysis of the following code:\n\n"
+                                + code_context
+                                + "\n\nAnalysis Requirements:\n"
+                                    "1. Provide a concise summary of what the code does\n"
+                                    "2. Explain the detailed functionality\n"
+                                    "3. Identify key programming concepts used\n"
+                                    "4. Assess complexity level (simple/moderate/complex)\n"
+                                    "5. Identify potential issues or areas for improvement\n"
+                                    "6. Provide practical usage examples\n\n"
+                                    "Code Analysis:"
+                        )
             
             # Generate structured analysis
             analysis = await self.generate_structured_response(
@@ -899,36 +895,32 @@ Code Analysis:"""
             
             # Create documentation prompt based on type
             if doc_type == "docstring":
-                prompt = f"""Generate comprehensive docstring documentation for:
-
-{code_context}
-
-Include:
-1. Overview of functionality
-2. Detailed description
-3. Parameter documentation (if applicable)
-4. Return value documentation (if applicable)
-5. Usage examples
-6. Important notes
-7. Related concepts"""
-            
+                prompt = (
+                    "Generate comprehensive docstring documentation for:\n\n"
+                    + code_context
+                    + "\n\nInclude:\n"
+                      "1. Overview of functionality\n"
+                      "2. Detailed description\n"
+                      "3. Parameter documentation (if applicable)\n"
+                      "4. Return value documentation (if applicable)\n"
+                      "5. Usage examples\n"
+                      "6. Important notes\n"
+                      "7. Related concepts"
+                )
             elif doc_type == "readme":
-                prompt = f"""Generate README documentation for:
-
-{code_context}
-
-Include:
-1. High-level overview
-2. Installation/usage instructions
-3. API documentation
-4. Code examples
-5. Dependencies
-6. Best practices"""
-            
+                prompt = (
+                    "Generate README documentation for:\n\n"
+                    + code_context
+                    + "\n\nInclude:\n"
+                      "1. High-level overview\n"
+                      "2. Installation/usage instructions\n"
+                      "3. API documentation\n"
+                      "4. Code examples\n"
+                      "5. Dependencies\n"
+                      "6. Best practices"
+                )
             else:
-                prompt = f"""Generate documentation for:
-
-{code_context}"""
+                prompt = "Generate documentation for:\n\n{}".format(code_context)
             
             # Generate structured documentation
             documentation = await self.generate_structured_response(
@@ -962,17 +954,17 @@ Include:
                 context_chunks = await self.vector_retriever.retrieve_relevant_chunks(query, limit=3)
             
             # Create analysis prompt
-            prompt = f"""Analyze this query to determine the best response approach:
-
-Query: {query}
-
-Available Context: {len(context_chunks)} relevant chunks found
-
-Please analyze:
-1. Query type (code explanation, debugging, documentation, etc.)
-2. What specific context is needed
-3. Confidence level for response
-4. Suggested follow-up questions"""
+            prompt = (
+                "Analyze this query to determine the best response approach:\n\n"
+                "Query: {}\n\nAvailable Context: {} relevant chunks found\n\nPlease analyze:\n"
+                "1. Query type (code explanation, debugging, documentation, etc.)\n"
+                "2. What specific context is needed\n"
+                "3. Confidence level for response\n"
+                "4. Suggested follow-up questions".format(
+                    query,
+                    len(context_chunks)
+                )
+            )
             
             # Generate structured analysis
             analysis = await self.generate_structured_response(
@@ -1051,14 +1043,13 @@ Please analyze:
         response_model: Type[BaseModel]
     ) -> str:
         """Build prompt for structured response generation."""
-        return f"""Based on the following context, provide a structured response that matches the expected format.
-
-Context:
-{context}
-
-Query: {query}
-
-Please provide a response that strictly follows the expected JSON schema structure."""
+        return (
+            "Based on the following context, provide a structured response that matches the expected format.\n\n"
+            "Context:\n{}\n\nQuery: {}\n\nPlease provide a response that strictly follows the expected JSON schema structure.".format(
+                context,
+                query
+            )
+        )
     
     def _prepare_code_context(self, code_chunks: List[Dict[str, Any]]) -> str:
         """Prepare code context for analysis."""

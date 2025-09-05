@@ -292,13 +292,14 @@ class BaseAgent(ABC):
     
     async def _prepare_structured_input(self, task: AgentTask) -> str:
         """Prepare structured input for Instructor."""
-        return f"""Task: {task.task_type}
-        
-Input Data: {task.input_data}
-
-Parameters: {task.parameters}
-
-Expected Output Type: {task.expected_output_type}"""
+        return (
+            "Task: {}\n\nInput Data: {}\n\nParameters: {}\n\nExpected Output Type: {}".format(
+                task.task_type,
+                task.input_data,
+                task.parameters,
+                task.expected_output_type
+            )
+        )
     
     def _get_system_prompt(self, task_type: str) -> str:
         """Get system prompt for structured execution."""

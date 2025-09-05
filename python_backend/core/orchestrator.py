@@ -271,17 +271,19 @@ class RAGOrchestrator:
                 })
             
             # Create enhanced query with session context
-            enhanced_query = f"""Context from session files:
-
-{chr(10).join([f"File: {f['path']} (Branch: {f['branch']})\nContent:\n{f['content']}\n" + "-" * 50 for f in context_files])}
-
-User Question: {message}
-
-Please provide a detailed response based on the code and files provided above. 
-- Reference specific file names and line numbers where applicable
-- Include relevant code snippets with proper citations
-- Provide confidence scores for your responses
-- If context is insufficient, clearly state what additional information would be helpful"""
+            enhanced_query = (
+                "Context from session files:\n\n"
+                + "\n".join([
+                    f"File: {f['path']} (Branch: {f['branch']})\nContent:\n{f['content']}\n{'-' * 50}"
+                    for f in context_files
+                ])
+                + f"\n\nUser Question: {message}\n\n"
+                + "Please provide a detailed response based on the code and files provided above.\n"
+                  "- Reference specific file names and line numbers where applicable\n"
+                  "- Include relevant code snippets with proper citations\n"
+                  "- Provide confidence scores for your responses\n"
+                  "- If context is insufficient, clearly state what additional information would be helpful"
+            )
 
             # Create enhanced task for the code chat agent
             task = AgentTask(
