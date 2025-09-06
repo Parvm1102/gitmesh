@@ -43,7 +43,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE_URL = 'http://localhost:3001/api';
+// Use environment variable for backend URL or fallback to default
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL 
+  ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1` 
+  : 'http://localhost:3001/api/v1';
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -65,20 +68,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('Found real GitHub token, validating...');
       setToken(storedToken);
       validateToken(storedToken);
-    } else if (storedToken === 'demo-token' && autoDemo === 'true') {
-      console.log('Demo token found with auto demo enabled, using demo mode');
-      loginDemo();
-    } else {
-      console.log('No valid token found');
-      
-      // Auto-login with demo mode in development only if specifically enabled
-      if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && autoDemo === 'true') {
-        console.log('Auto-login with demo mode enabled');
+    } else if (storedToken === 'demo-token') {
+      console.log('Demo token found, checking if we should use it');
+      // Only use demo token if auto demo is explicitly enabled
+      if (autoDemo === 'true') {
+        console.log('Auto demo enabled, using demo mode');
         loginDemo();
       } else {
-        console.log('Setting loading to false');
+        console.log('Auto demo not enabled, clearing demo token');
+        localStorage.removeItem('beetle_token');
         setLoading(false);
       }
+    } else {
+      console.log('No valid token found');
+      setLoading(false);
     }
   }, []);
 
@@ -149,43 +152,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async () => {
     try {
+      console.log('Starting GitHub login flow');
+      console.log('Getting GitHub OAuth URL from:', `${API_BASE_URL}/auth/github/url`);
+      
       // Get GitHub OAuth URL from backend
       const response = await fetch(`${API_BASE_URL}/auth/github/url`);
+      
+      if (!response.ok) {
+        console.error('Failed to get GitHub OAuth URL:', response.status, response.statusText);
+        throw new Error(`Failed to get GitHub OAuth URL: ${response.status} ${response.statusText}`);
+      }
+      
       const data = await response.json();
+      console.log('Received GitHub OAuth URL:', data.auth_url);
+      
+      // Disable auto demo mode
+      localStorage.removeItem('auto_demo_mode');
       
       // Redirect to GitHub OAuth
-      window.location.href = data.authUrl;
+      window.location.href = data.auth_url;
     } catch (error) {
       console.error('Login error:', error);
-      // Fallback to mock login for development
-      console.log('Using mock login for development');
-      setIsAuthenticated(true);
-      setUser({
-        id: 1,
-        login: 'demo-user',
-        name: 'Demo User',
-        email: 'demo@example.com',
-        avatar_url: 'https://github.com/github.png',
-        bio: 'Demo user for development',
-        location: 'Demo City',
-        company: 'Demo Corp',
-        blog: 'https://demo.com',
-        twitter_username: 'demo',
-        public_repos: 10,
-        followers: 100,
-        following: 50,
-        created_at: '2023-01-01T00:00:00Z',
-        lastLogin: new Date().toISOString(),
-        analytics: {
-          totalCommits: 150,
-          totalPRs: 25,
-          totalIssues: 30,
-          activeRepositories: 5
-        }
-      });
-      setToken('demo-token');
-      localStorage.setItem('beetle_token', 'demo-token');
-      localStorage.setItem('isAuthenticated', 'true');
+      alert('Failed to connect to GitHub. Please check the console for more details.');
+      
+      // Only fallback to demo mode in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Using mock login for development due to error');
+        loginDemo();
+      } else {
+        setLoading(false);
+      }
     }
   };
 

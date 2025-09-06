@@ -120,7 +120,13 @@ class GitHubOAuth:
             'state': state
         }
         
-        return f"https://github.com/login/oauth/authorize?{urlencode(params)}"
+        auth_url = f"https://github.com/login/oauth/authorize?{urlencode(params)}"
+        
+        # Log the generated URL (without the full client_id for security)
+        client_id_masked = self.client_id[:4] + '...' if self.client_id and len(self.client_id) > 4 else 'not_set'
+        logger.info(f"Generated GitHub OAuth URL with client_id={client_id_masked}, redirect_uri={self.callback_url}, state={state[:5]}...")
+        
+        return auth_url
     
     async def exchange_code_for_token(self, code: str) -> Dict[str, Any]:
         """Exchange authorization code for access token."""
@@ -138,35 +144,59 @@ class GitHubOAuth:
             'User-Agent': 'Beetle-AI'
         }
         
-        async with aiohttp.ClientSession() as session:
-            async with session.post(token_url, data=data, headers=headers) as response:
-                if response.status != 200:
-                    raise Exception(f"Token exchange failed: {response.status}")
-                
-                result = await response.json()
-                
-                if 'error' in result:
-                    raise Exception(f"OAuth error: {result.get('error_description', result['error'])}")
-                
-                if 'access_token' not in result:
-                    raise Exception("No access token in response")
-                
-                return result
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(token_url, data=data, headers=headers) as response:
+                    result = await response.json()
+                    
+                    if response.status != 200:
+                        logger.error(f"Token exchange failed: HTTP {response.status} - {result}")
+                        return {
+                            'error': 'http_error',
+                            'error_description': f"Token exchange failed with status {response.status}"
+                        }
+                    
+                    if 'error' in result:
+                        logger.error(f"OAuth error in token response: {result}")
+                        return result  # Return the error response as-is
+                    
+                    if 'access_token' not in result:
+                        logger.error("No access token in GitHub response")
+                        return {
+                            'error': 'missing_token',
+                            'error_description': "No access token in response"
+                        }
+                    
+                    return result
+        except Exception as e:
+            logger.error(f"Exception during token exchange: {str(e)}")
+            return {
+                'error': 'exception',
+                'error_description': f"Exception during token exchange: {str(e)}"
+            }
     
     async def get_user_profile(self, access_token: str) -> Dict[str, Any]:
         """Get user profile from GitHub API."""
         headers = {
-            'Authorization': f'token {access_token}',
+            'Authorization': f'Bearer {access_token}',  # Using Bearer token format as per GitHub API docs
             'Accept': 'application/vnd.github.v3+json',
             'User-Agent': 'Beetle-AI'
         }
         
-        async with aiohttp.ClientSession() as session:
-            async with session.get('https://api.github.com/user', headers=headers) as response:
-                if response.status != 200:
-                    raise Exception(f"Failed to get user profile: {response.status}")
-                
-                return await response.json()
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get('https://api.github.com/user', headers=headers) as response:
+                    if response.status != 200:
+                        error_text = await response.text()
+                        logger.error(f"Failed to get user profile: HTTP {response.status} - {error_text}")
+                        raise Exception(f"GitHub API error: {response.status}")
+                    
+                    user_data = await response.json()
+                    logger.info(f"Successfully retrieved GitHub profile for user: {user_data.get('login')}")
+                    return user_data
+        except Exception as e:
+            logger.error(f"Exception during GitHub profile retrieval: {str(e)}")
+            raise Exception(f"Failed to retrieve GitHub profile: {str(e)}")
 
 
 class JWTHandler:
@@ -193,10 +223,11 @@ class JWTHandler:
         
         return jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
     
-    def verify_token(self, token: str) -> Dict[str, Any]:
+    def verify_token(self, token: str, verify_expiration: bool = True) -> Dict[str, Any]:
         """Verify and decode JWT token."""
         try:
-            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
+            options = {"verify_exp": verify_expiration}
+            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm], options=options)
             return payload
         except jwt.ExpiredSignatureError:
             raise Exception("Token has expired")

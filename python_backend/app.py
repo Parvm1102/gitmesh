@@ -33,6 +33,7 @@ from api.v1.routes.aggregated import router as aggregated_router
 from api.v1.routes.websocket import router as websocket_router
 from api.v1.routes.file_upload import router as file_upload_router
 from api.v1.routes.static import router as static_router
+from api.v1.routes.ai import router as ai_router
 
 logger = structlog.get_logger(__name__)
 settings = get_settings()
@@ -132,19 +133,23 @@ app.add_middleware(
 )
 
 # Include API routes
-app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
-app.include_router(health.router, prefix="/api/v1", tags=["health"])
+app.include_router(chat.router, prefix="/api/v1/chat", tags=["chat"])
+app.include_router(health.router, prefix="/api/v1/health", tags=["health"])
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["authentication"])
 app.include_router(github_router, prefix="/api/v1/github", tags=["github"])
 app.include_router(analytics_router, prefix="/api/v1/analytics", tags=["analytics"])
 app.include_router(projects_router, prefix="/api/v1/projects", tags=["projects"])
 app.include_router(webhooks_router, prefix="/api/v1/webhooks", tags=["webhooks"])
 app.include_router(aggregated_router, prefix="/api/v1/aggregated", tags=["aggregated"])
+app.include_router(ai_router, prefix="/api/v1/ai", tags=["ai"])
 
 # Include new routes for complete JS backend compatibility
-app.include_router(websocket_router, prefix="/api/v1", tags=["websocket"])
-app.include_router(file_upload_router, prefix="/api/v1", tags=["file_upload"])
+app.include_router(websocket_router, prefix="/api/v1/websocket", tags=["websocket"])
+app.include_router(file_upload_router, prefix="/api/v1/file_upload", tags=["file_upload"])
 app.include_router(static_router, tags=["static_files"])
+
+# Special route for GitHub OAuth callback without v1 prefix for compatibility with GitHub OAuth settings
+app.include_router(auth_router, prefix="/api/auth", tags=["authentication_compat"])
 
 # Add a test endpoint to verify the connection
 @app.get("/test")
@@ -329,15 +334,16 @@ async def root():
             "Vector search and retrieval"
         ],
         "endpoints": {
-            "health": "/health",
+            "health": "/api/v1/health",
             "test": "/test", 
             "auth": "/api/v1/auth",
             "github": "/api/v1/github",
             "analytics": "/api/v1/analytics",
             "projects": "/api/v1/projects",
             "chat": "/api/v1/chat",
-            "websocket": "/api/v1/chat/ws",
-            "file_upload": "/api/v1/import",
+            "ai": "/api/v1/ai",
+            "websocket": "/api/v1/websocket",
+            "file_upload": "/api/v1/file_upload",
             "static_files": "/public/* and /static/*",
             "webhooks": "/api/v1/webhooks",
             "aggregated": "/api/v1/aggregated",

@@ -12,7 +12,7 @@ import uuid
 
 from config.settings import get_settings
 from models.api.chat_request import ChatRequest, ChatResponse, StreamingChatResponse
-from models.api.file_models import FileMetadata, DocumentChunk, FileProcessingResult
+from models.api.file_models import FileMetadata, DocumentChunk, FileProcessingResult, ChunkMetadata
 from models.api.session_models import ChatSession, SessionContext, FileContext
 from rag.preprocessing.chunker import get_text_chunker
 from rag.retrieval.vector_retriever import get_enhanced_vector_retriever
@@ -52,11 +52,16 @@ class RAGOrchestrator:
         try:
             logger.info("Initializing RAG orchestrator")
             
-            # Initialize Qdrant
-            qdrant_initialized = await self.qdrant_client.initialize()
-            if not qdrant_initialized:
-                logger.error("Failed to initialize Qdrant client")
-                return False
+            # Initialize Qdrant, but don't fail if it's not available
+            try:
+                qdrant_initialized = await self.qdrant_client.initialize()
+                if not qdrant_initialized:
+                    logger.warning("Could not initialize Qdrant client. Vector-related features will be unavailable.")
+                else:
+                    logger.info("Qdrant client initialized successfully.")
+            except Exception as q_exc:
+                logger.error(f"Qdrant initialization failed with an exception: {q_exc}. Vector-related features will be unavailable.")
+
             
             # Initialize session manager
             session_manager_initialized = await initialize_session_manager()
