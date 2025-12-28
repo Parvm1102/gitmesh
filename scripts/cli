@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+
 set -eo pipefail
 
 PROJECT_NAME="gitmesh"
@@ -488,6 +489,7 @@ while test $# -gt 0
 do
     case "$1" in
         scaffold) scaffold $2 $3 $4 $5
+            echo -e "\nScript ran successfully. Check the website on http://localhost:8081";
             exit;
         ;;
         service)

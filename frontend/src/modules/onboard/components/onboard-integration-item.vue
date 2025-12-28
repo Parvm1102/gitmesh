@@ -1,69 +1,88 @@
 <template>
   <div 
-    class="group relative w-full h-full flex flex-col bg-black border border-zinc-700 hover:border-zinc-600 transition-all duration-200"
-    :class="{ 'bg-zinc-900/10': integration.onboard?.highlight }"
+    class="group relative w-full h-full flex flex-col bg-zinc-950 border border-zinc-800 hover:border-zinc-700 transition-all duration-300 shadow-2xl"
+    :class="{ 'ring-1 ring-orange-500/20 bg-orange-500/[0.02]': integration.onboard?.highlight }"
   >
+    <div class="flex justify-between items-center px-3 py-1 border-b border-zinc-900 bg-black/50">
+      <span class="text-[8px] font-mono text-zinc-600 uppercase tracking-[0.2em]">MOD_ID: {{ integration.id }}</span>
+      <div class="flex gap-1">
+        <span class="w-1 h-1 bg-zinc-800"></span>
+        <span class="w-1 h-1 bg-zinc-800"></span>
+      </div>
+    </div>
+
     <div 
-      class="absolute left-0 top-0 bottom-0 w-[2px] transition-colors duration-300"
-      :class="statusColor"
+      class="absolute left-0 top-[26px] bottom-0 w-[2px] transition-all duration-500 group-hover:w-[3px]"
+      :class="[statusColor, isDone ? 'shadow-[0_0_10px_rgba(16,185,129,0.3)]' : '']"
     ></div>
 
-    <div class="p-5 flex flex-col h-full">
-      
-      <div class="flex items-center gap-4 mb-3">
-        
+    <div class="p-5 flex flex-col h-full relative overflow-hidden">
+      <div class="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_0%,rgba(234,88,12,0.03)_50%,transparent_100%)] -translate-y-full group-hover:animate-[scan_4s_linear_infinite] pointer-events-none"></div>
+
+      <div class="flex items-start gap-4 mb-4 relative z-10">
         <div class="relative shrink-0">
-          <div class="w-10 h-10 flex items-center justify-center bg-zinc-900 border border-zinc-700 group-hover:border-zinc-600 transition-colors rounded-sm overflow-hidden">
+          <div class="w-12 h-12 flex items-center justify-center bg-black border border-zinc-800 group-hover:border-zinc-700 transition-colors rounded-none p-2.5 shadow-inner">
             <img 
               :alt="integration.name" 
               :src="integration.image" 
-              class="w-5 h-5 object-contain transition-opacity opacity-90 group-hover:opacity-100"
+              class="w-full h-full object-contain transition-all duration-300 filter grayscale group-hover:grayscale-0 opacity-70 group-hover:opacity-100"
               :class="{ 'invert-icon': integration.id === 'github' }" 
             />
           </div>
           
-          <div class="absolute -bottom-1 -right-1 w-2 h-2 bg-black border border-zinc-700 flex items-center justify-center">
-            <div class="w-1 h-1 rounded-full" :class="statusBgColor"></div>
+          <div class="absolute -top-1 -left-1 w-2.5 h-2.5 bg-black border border-zinc-800 flex items-center justify-center">
+            <div class="w-1 h-1" :class="[statusBgColor, isDone ? 'animate-pulse' : '']"></div>
           </div>
         </div>
 
-        <div class="flex flex-col">
+        <div class="flex flex-col pt-1">
           <div class="flex items-center gap-2">
-            <h3 class="text-white font-sans text-sm font-bold tracking-tight">
+            <h3 class="text-white font-sans text-xs font-black tracking-[0.15em] uppercase italic">
               {{ integration.name }}
             </h3>
-            <span v-if="integration.premium" class="px-1 py-px bg-zinc-900 border border-zinc-700 text-[9px] text-orange-500 font-mono uppercase tracking-wider">
-              PRO
+            <span v-if="integration.premium" class="px-1 py-0.5 bg-orange-500/10 border border-orange-500/20 text-[8px] text-orange-500 font-mono font-bold uppercase tracking-tighter">
+              ENHANCED
             </span>
           </div>
+          <span class="text-[8px] font-mono text-zinc-600 uppercase tracking-widest mt-0.5">Integration_Module</span>
         </div>
       </div>
 
-      <p class="text-zinc-200 text-xs font-mono leading-relaxed mb-6 flex-grow border-l-2 border-zinc-900 pl-3">
-        {{ integration.onboard?.description || 'Integration module' }}
-      </p>
+      <div class="relative mb-6 flex-grow">
+        <p class="text-zinc-400 text-[10px] font-mono leading-relaxed border-l border-zinc-800 pl-4 py-1 italic">
+          {{ integration.onboard?.description || 'Awaiting module initialization and data-link parameters.' }}
+        </p>
+      </div>
 
-      <div class="mt-auto border-t border-zinc-900 pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="mt-auto pt-4 border-t border-zinc-900 flex flex-col gap-4 relative z-10">
         
-        <div class="font-mono text-[9px] uppercase tracking-wider">
-          <span v-if="isDone" class="text-emerald-500 flex items-center gap-2">
-            <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> ONLINE
-          </span>
-          <span v-else-if="isError" class="text-red-500 flex items-center gap-2">
-            <i class="ri-error-warning-fill"></i> ERROR
-          </span>
-          <span v-else-if="isNoData" class="text-zinc-600 flex items-center gap-2">
-            <i class="ri-pulse-line"></i> NO DATA
-          </span>
-          <span v-else-if="isWaitingForAction" class="text-orange-500 flex items-center gap-2">
-            <i class="ri-alert-line"></i> ACTION REQ
-          </span>
-          <span v-else-if="isConnected" class="text-zinc-400 flex items-center gap-2">
-            <i class="ri-loader-4-line animate-spin"></i> SYNCING...
-          </span>
-          <span v-else class="text-zinc-600 flex items-center gap-2">
-            <span class="w-1.5 h-1.5 border border-zinc-700 rounded-full"></span> OFFLINE
-          </span>
+        <div class="font-mono text-[9px] uppercase tracking-[0.2em] flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span v-if="isDone" class="text-emerald-500 flex items-center gap-2">
+              <span class="flex h-1.5 w-1.5 relative">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+              </span> 
+              LINK_ACTIVE
+            </span>
+            <span v-else-if="isError" class="text-red-500 flex items-center gap-2 font-bold">
+              <i class="ri-error-warning-fill text-xs"></i> PROTOCOL_ERR
+            </span>
+            <span v-else-if="isNoData" class="text-zinc-500 flex items-center gap-2">
+              <i class="ri-pulse-line text-xs"></i> NULL_DATA
+            </span>
+            <span v-else-if="isWaitingForAction" class="text-orange-500 flex items-center gap-2 font-bold">
+              <i class="ri-alert-line text-xs"></i> REQ_ACTION
+            </span>
+            <span v-else-if="isConnected" class="text-zinc-400 flex items-center gap-2">
+              <i class="ri-loader-4-line animate-spin text-xs"></i> SYNCING_BUFFER
+            </span>
+            <span v-else class="text-zinc-700 flex items-center gap-2">
+              <span class="w-1.5 h-1.5 border border-zinc-800"></span> OFFLINE
+            </span>
+          </div>
+
+          <span class="text-zinc-800 text-[8px]">v.2.5.0</span>
         </div>
 
         <app-integration-connect
@@ -73,35 +92,36 @@
           <template #default="{ connect, connected, settings, hasSettings }">
             <div class="flex items-center gap-2">
               
-              <div v-if="!connected || !isConnected || hasSettings" class="flex items-center gap-2">
+              <div v-if="!connected || !isConnected || hasSettings" class="flex-1 flex items-center gap-2">
                 
                 <button
                   v-if="!connected"
-                  class="h-7 px-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-orange-500 text-zinc-300 hover:text-orange-500 transition-all font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 group/btn"
+                  class="flex-1 h-8 bg-orange-600 hover:bg-orange-500 text-black transition-all font-mono text-[10px] font-black uppercase tracking-[0.15em] flex items-center justify-center gap-2 group/btn relative overflow-hidden"
                   @click="() => onConnect(connect)"
                 >
-                  <span>:: CONNECT</span>
-                  <i class="ri-arrow-right-s-line group-hover/btn:translate-x-0.5 transition-transform"></i>
+                  <div class="absolute inset-0 bg-white/10 -translate-x-full group-hover/btn:animate-[shimmer_1.5s_infinite]"></div>
+                  <span>INITIALIZE_LINK</span>
+                  <i class="ri-arrow-right-line group-hover/btn:translate-x-1 transition-transform"></i>
                 </button>
 
                 <button
                   v-else-if="!isConnected"
-                  class="h-7 px-2 border border-red-900/30 text-red-700 hover:text-red-500 hover:border-red-500 hover:bg-red-950/10 transition-all font-mono text-[10px] uppercase tracking-wider flex items-center justify-center"
+                  class="flex-1 h-8 border border-red-900/50 text-red-500 hover:bg-red-500 hover:text-black transition-all font-mono text-[10px] font-bold uppercase tracking-widest flex items-center justify-center"
                   :disabled="loadingDisconnect"
                   @click="handleDisconnect"
                 >
-                   <i v-if="loadingDisconnect" class="ri-loader-4-line animate-spin"></i>
-                   <span v-else>ABORT</span>
+                   <i v-if="loadingDisconnect" class="ri-loader-4-line animate-spin mr-2"></i>
+                   <span v-else>TERMINATE_LINK</span>
                 </button>
 
               </div>
 
               <button
                 v-if="hasSettings"
-                class="h-7 w-7 flex items-center justify-center border border-zinc-700 bg-black text-zinc-200 hover:text-white hover:border-zinc-500 transition-colors"
+                class="h-8 w-8 flex items-center justify-center border border-zinc-800 bg-black text-zinc-500 hover:text-orange-500 hover:border-orange-500/50 transition-all shadow-lg"
                 @click="settings"
               >
-                <i class="ri-settings-4-fill text-xs"></i>
+                <i class="ri-settings-5-line text-sm"></i>
               </button>
 
             </div>
@@ -131,7 +151,6 @@ const loadingDisconnect = ref(false);
 
 const ERROR_BANNER_WORKING_DAYS_DISPLAY = 7;
 
-// Helper to check date diff
 const isCurrentDateAfterGivenWorkingDays = (date, workingDays) => {
   if (!date || !workingDays) return false;
   const targetDate = new Date(date);
@@ -139,26 +158,23 @@ const isCurrentDateAfterGivenWorkingDays = (date, workingDays) => {
   return diffDays > workingDays;
 };
 
-// --- Computed States ---
+// --- Computed States (Unchanged) ---
 const isConnected = computed(() => props.integration.status !== undefined);
-
 const isDone = computed(() => 
   props.integration.status === 'done' || 
   (props.integration.status === 'error' && !isCurrentDateAfterGivenWorkingDays(props.integration.updatedAt, ERROR_BANNER_WORKING_DAYS_DISPLAY))
 );
-
 const isError = computed(() => 
   props.integration.status === 'error' && 
   isCurrentDateAfterGivenWorkingDays(props.integration.updatedAt, ERROR_BANNER_WORKING_DAYS_DISPLAY)
 );
-
 const isNoData = computed(() => props.integration.status === 'no-data');
 const isWaitingForAction = computed(() => props.integration.status === 'pending-action');
 
-// --- Visual Logic ---
+// --- Visual Logic (Unchanged but adapted colors) ---
 const statusColor = computed(() => {
   if (isDone.value) return 'bg-emerald-500';
-  if (isError.value || isNoData.value) return 'bg-red-500';
+  if (isError.value || isNoData.value) return 'bg-red-600';
   if (isWaitingForAction.value) return 'bg-orange-500';
   if (isConnected.value) return 'bg-zinc-700';
   return 'bg-zinc-900'; 
@@ -170,7 +186,7 @@ const statusBgColor = computed(() => {
    return 'bg-zinc-800';
 });
 
-// --- Actions ---
+// --- Actions (Unchanged) ---
 const handleDisconnect = () => {
   loadingDisconnect.value = true;
   store.dispatch('integration/doDestroy', props.integration.id).finally(() => {
@@ -185,15 +201,21 @@ const onConnect = (connect) => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;600;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;600;700;900&display=swap');
 
 .font-sans { font-family: 'Inter', sans-serif; }
 .font-mono { font-family: 'JetBrains Mono', monospace; }
 
-/* GitHub Logo Fix:
-  Inverts color so black logos become white.
-  Brightness(2) ensures it hits pure white, not grey.
-*/
+@keyframes scan {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(200%); }
+}
+
+@keyframes shimmer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
 .invert-icon {
   filter: invert(1) brightness(2);
 }
