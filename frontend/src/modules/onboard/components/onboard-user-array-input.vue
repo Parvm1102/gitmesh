@@ -1,10 +1,10 @@
 <template>
-  <article class="flex items-start w-full">
+  <article class="flex items-start w-full group/input">
     <div class="flex flex-grow items-start w-full">
       <app-form-item
         :validation="$v.emails"
         :error-messages="{
-          email: 'INVALID_FORMAT',
+          email: 'INVALID_ID',
         }"
         class="!mb-0 mr-0 flex-grow w-full terminal-input-group"
       >
@@ -16,20 +16,23 @@
           @change="$v.emails.$touch"
         >
           <template #append>
-            <el-select
-              v-model="model.roles[0]"
-              class="w-32 terminal-select"
-              placeholder="ROLE"
-              placement="bottom-end"
-              popper-class="terminal-select-dropdown"
-            >
-              <el-option
-                v-for="option in roles"
-                :key="option.value"
-                :label="option.label"
-                :value="option.value"
-              />
-            </el-select>
+            <div class="flex items-center h-full">
+              <el-select
+                v-model="model.roles[0]"
+                class="w-28 terminal-select"
+                placeholder="LEVEL"
+                placement="bottom-end"
+                popper-class="terminal-select-dropdown"
+              >
+                <el-option
+                  v-for="option in roles"
+                  :key="option.value"
+                  :label="option.label"
+                  :value="option.value"
+                />
+              </el-select>
+              <div class="w-1.5 h-full bg-zinc-900 border-l border-zinc-800 hidden sm:block"></div>
+            </div>
           </template>
         </el-input>
       </app-form-item>
@@ -50,15 +53,14 @@ type InvitedUser = {
   roles: string[]
 }
 
-// Uppercase labels for terminal look
 const roles = [
   {
     value: RoleEnum.ADMIN,
-    label: 'ADMIN',
+    label: 'ADMIN_ACCESS',
   },
   {
     value: RoleEnum.READONLY,
-    label: 'READ-ONLY',
+    label: 'QUERY_ONLY',
   },
 ];
 
@@ -86,95 +88,119 @@ const $v = useVuelidate(rules, model);
 </script>
 
 <style scoped>
-/* 1. Main Input Styling */
+/* 1. Monolithic Container Styling */
 :deep(.terminal-merged-input .el-input__wrapper) {
-  background-color: transparent !important;
-  box-shadow: none !important; /* Remove default shadow */
-  border: 1px solid #27272a; /* zinc-800 */
-  border-right: none; /* Merge with append slot */
+  background-color: #09090b !important; /* zinc-950 */
+  box-shadow: none !important;
+  border: 1px solid #18181b !important; /* zinc-900 */
+  border-right: none !important;
   border-radius: 0;
-  height: 40px;
-  padding-left: 12px;
-  transition: border-color 0.2s;
+  height: 42px;
+  padding-left: 14px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:deep(.terminal-merged-input:hover .el-input__wrapper) {
+  border-color: #27272a !important; /* zinc-800 */
 }
 
 :deep(.terminal-merged-input .el-input__wrapper.is-focus) {
-  border-color: #ea580c; /* orange-600 */
-  z-index: 2; /* Bring above append slot */
+  border-color: #ea580c !important; /* orange-600 */
+  background-color: #000000 !important;
+  z-index: 5;
 }
 
 :deep(.terminal-merged-input .el-input__inner) {
-  color: white !important;
+  color: #ffffff !important;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  letter-spacing: -0.01em;
 }
 
-/* 2. Appended Select Styling */
+:deep(.terminal-merged-input .el-input__inner::placeholder) {
+  color: #3f3f46;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+/* 2. Integrated Select Module Styling */
 :deep(.terminal-merged-input .el-input-group__append) {
-  background-color: transparent !important;
+  background-color: #09090b !important;
   box-shadow: none !important;
-  border: 1px solid #27272a; /* zinc-800 */
-  border-left: 1px solid #3f3f46; /* zinc-700 divider */
+  border: 1px solid #18181b !important;
+  border-left: 1px solid #18181b !important;
   border-radius: 0;
   padding: 0;
-  width: 110px; /* Specific width for roles */
+  transition: all 0.3s ease;
+}
+
+:deep(.terminal-merged-input:hover .el-input-group__append) {
+  border-color: #27272a !important;
 }
 
 :deep(.terminal-select .el-input__wrapper) {
   box-shadow: none !important;
   background-color: transparent !important;
-  padding: 0 10px;
+  padding: 0 12px;
+  height: 100%;
 }
 
 :deep(.terminal-select .el-input__inner) {
-  color: #a1a1aa !important; /* zinc-400 */
+  color: #71717a !important; /* zinc-400 */
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  font-weight: 600;
-  text-align: right;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   cursor: pointer;
 }
 
-/* Hover state for select */
-:deep(.terminal-merged-input .el-input-group__append:hover) {
-  background-color: #18181b !important; /* zinc-900 */
+:deep(.terminal-select .el-input__inner:hover) {
+  color: #ea580c !important;
 }
 
-/* Error State */
-:deep(.is-error-relative .el-input__wrapper) {
+/* 3. Error Protocol Overlay */
+:deep(.is-error .el-input__wrapper),
+:deep(.is-error .el-input-group__append) {
   border-color: #ef4444 !important; /* red-500 */
-  z-index: 10;
+  background-color: #450a0a05 !important;
 }
 </style>
 
 <style>
+/* 4. Global Dropdown Override */
 .terminal-select-dropdown.el-popper {
-  background-color: #000000 !important;
-  border: 1px solid #3f3f46 !important; /* zinc-700 */
+  background-color: #09090b !important;
+  border: 1px solid #18181b !important;
   border-radius: 0 !important;
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.7) !important;
 }
 
 .terminal-select-dropdown .el-select-dropdown__item {
-  color: #a1a1aa !important; /* zinc-400 */
+  color: #52525b !important; /* zinc-600 */
   font-family: 'JetBrains Mono', monospace !important;
-  font-size: 11px !important;
-  height: 32px;
-  line-height: 32px;
+  font-size: 10px !important;
+  height: 36px;
+  line-height: 36px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0 16px !important;
 }
 
 .terminal-select-dropdown .el-select-dropdown__item.hover, 
 .terminal-select-dropdown .el-select-dropdown__item:hover {
   background-color: #18181b !important; /* zinc-900 */
-  color: #ea580c !important; /* orange-600 */
+  color: #ffffff !important;
 }
 
 .terminal-select-dropdown .el-select-dropdown__item.selected {
-  color: #ea580c !important; /* orange-600 */
-  font-weight: bold;
+  color: #ea580c !important;
+  background-color: #ea580c05 !important;
 }
 
-/* Remove the arrow/triangle */
 .terminal-select-dropdown .el-popper__arrow {
-  display: none;
+  display: none !important;
 }
 </style>
