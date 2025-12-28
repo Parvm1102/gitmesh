@@ -65,6 +65,14 @@ cd scripts
 
 The application will be available at `http://localhost:8081`
 
+> **Note:** For Slack integration, you must expose your local server with HTTPS. Start [ngrok](https://ngrok.com/) in your project directory:
+>
+> ```bash
+> ngrok http 8080
+> ```
+>
+> Use the generated `https://...ngrok.io/slack/callback` URL as your Slack app's redirect URL and set `slack_redirect_url` in your local override configuration to this value.
+
 ---
 
 ## CLI Commands
