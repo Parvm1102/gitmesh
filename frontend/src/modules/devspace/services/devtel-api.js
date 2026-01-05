@@ -432,7 +432,7 @@ export default class DevtelService {
         const tenantId = getTenantId();
         const response = await authAxios.get(
             `/tenant/${tenantId}/devtel/team/analytics`,
-            { params }
+            { params: { ...params, projectId } }
         );
         return response.data;
     }
