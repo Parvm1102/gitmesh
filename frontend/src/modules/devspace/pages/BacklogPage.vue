@@ -161,11 +161,11 @@
     <!-- Issue Detail Drawer -->
     <el-drawer
       v-model="showIssuePanel"
-      :title="null"
-      :with-header="false"
+      :title="'Issue Details'"
       size="600px"
       @close="clearSelectedIssue"
       class="issue-drawer"
+      :close-on-click-modal="true"
     >
       <div v-if="selectedIssueId" class="drawer-content">
           <issue-detail-panel :issue-id="selectedIssueId" />
@@ -542,5 +542,27 @@ const setupSocketListeners = () => {
 
 :deep(.issue-drawer .el-drawer__body) {
     padding: 0;
+}
+
+:deep(.issue-drawer .el-drawer) {
+  border-left: 2px solid #3f3f46;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+}
+
+:deep(.issue-drawer .el-drawer__header) {
+  margin-bottom: 0;
+  padding: 20px;
+  border-bottom: 1px solid var(--el-border-color-light);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+:deep(.issue-drawer .el-drawer__close-btn) {
+  font-size: 24px;
+  color: var(--el-text-color-secondary);
+}
+
+:deep(.issue-drawer .el-drawer__close-btn:hover) {
+  color: var(--el-text-color-primary);
 }
 </style>

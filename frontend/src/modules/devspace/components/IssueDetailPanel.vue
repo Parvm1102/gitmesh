@@ -239,6 +239,37 @@ export default {
         if (newVal) {
             // Deep copy to break reactivity for editing
             localIssue.value = JSON.parse(JSON.stringify(newVal));
+            
+            // Convert description to TipTap format if it's a string
+            if (localIssue.value.description && typeof localIssue.value.description === 'string') {
+                try {
+                    // Try to parse as JSON first (in case it's already stored as JSON string)
+                    localIssue.value.description = JSON.parse(localIssue.value.description);
+                } catch (e) {
+                    // If not JSON, convert plain text to TipTap format
+                    localIssue.value.description = {
+                        type: 'doc',
+                        content: [
+                            {
+                                type: 'paragraph',
+                                content: [
+                                    {
+                                        type: 'text',
+                                        text: localIssue.value.description
+                                    }
+                                ]
+                            }
+                        ]
+                    };
+                }
+            } else if (!localIssue.value.description) {
+                // Initialize empty TipTap document
+                localIssue.value.description = {
+                    type: 'doc',
+                    content: []
+                };
+            }
+            
             fetchComments();
             fetchExternalLinks();
         }
@@ -281,10 +312,15 @@ export default {
     }
 
     async function updateDescription(content) {
-         // Tiptap returns HTML string
-        if (content === issue.value.description) return;
+         // Tiptap returns JSON object
+        const contentStr = JSON.stringify(content);
+        const currentStr = JSON.stringify(issue.value.description);
+        
+        if (contentStr === currentStr) return;
+        
         localIssue.value.description = content; // Sync local
-        await updateField({ description: content });
+        // Store as JSON string in backend
+        await updateField({ description: contentStr });
     }
 
     async function updateAssignee() {
