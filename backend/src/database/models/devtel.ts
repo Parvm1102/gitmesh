@@ -271,6 +271,10 @@ export default (sequelize) => {
                 defaultValue: DataTypes.UUIDV4,
                 primaryKey: true,
             },
+            tenantId: {
+                type: DataTypes.UUID,
+                allowNull: false,
+            },
             projectId: {
                 type: DataTypes.UUID,
                 allowNull: false,
