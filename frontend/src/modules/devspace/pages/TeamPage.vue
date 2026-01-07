@@ -1,142 +1,160 @@
 <template>
   <div class="team-page devspace-page">
-    <div class="page-header">
-      <div class="header-left">
-        <h1>Team (Connected to Contacts)</h1>
-        <div class="datasource-info">
-          <span class="datasource-label">Data source:</span>
-          <router-link :to="contactsPageUrl" class="datasource-link">
-            <span class="ri-contacts-line"></span>
-            Contacts (Team Members)
-          </router-link>
-        </div>
-      </div>
-      <div class="header-actions">
-        <el-select
-          v-model="selectedOrganization"
-          placeholder="Filter by organization"
-          clearable
-          style="width: 200px; margin-right: 12px"
-          @change="handleOrganizationChange"
-        >
-          <el-option
-            v-for="org in organizations"
-            :key="org.id"
-            :label="org.displayName || org.name"
-            :value="org.id"
-          />
-        </el-select>
-        <el-input
-          v-model="searchQuery"
-          placeholder="Search members..."
-          prefix-icon="Search"
-          clearable
-          style="width: 200px"
-          @input="handleSearch"
-        />
-        <el-button type="primary" style="margin-left: 12px" @click="showAddMemberDialog = true">
-          <i class="ri-user-add-line"></i> Add Team Member
-        </el-button>
-      </div>
+    <!-- Empty State: No Projects Created -->
+    <div v-if="!shouldShowContent" class="no-project-state">
+      <el-empty description="No Project Selected">
+        <template #image>
+          <i class="ri-team-line" style="font-size: 64px; color: var(--el-text-color-placeholder);"></i>
+        </template>
+        <template #description>
+          <div class="empty-state-content">
+            <h3>No Projects Available</h3>
+            <p>Create a project from the sidebar to start managing your team and viewing analytics.</p>
+          </div>
+        </template>
+      </el-empty>
     </div>
 
-    <div v-if="loading" class="loading-state">
-      <el-skeleton :rows="5" animated />
-    </div>
-
+    <!-- Main Content: Project Selected -->
     <template v-else>
-      <div class="team-stats">
-        <div class="stat-card">
-          <div class="stat-value">{{ totalMembers }}</div>
-          <div class="stat-label">Team Members</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">{{ analytics.issuesCompleted || 0 }}</div>
-          <div class="stat-label">Issues Completed</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">{{ analytics.avgVelocity || 0 }}</div>
-          <div class="stat-label">Avg Velocity</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">{{ analytics.avgCycleTime || 0 }}d</div>
-          <div class="stat-label">Avg Cycle Time</div>
-        </div>
-      </div>
-
-      <div class="team-grid">
-        <div v-for="member in filteredMembers" :key="member.id" class="member-card" :class="{ 'is-current-user': isCurrentUser(member) }">
-          <div class="member-avatar">
-            <el-avatar :size="64" :src="member.attributes?.avatarUrl?.default">
-              {{ getInitials(member) }}
-            </el-avatar>
-          </div>
-          <div class="member-info">
-            <h3 class="member-name">
-              {{ member.displayName || member.fullName || getPrimaryEmail(member) || 'Unknown' }}
-              <span v-if="isCurrentUser(member)" class="me-badge">(You)</span>
-            </h3>
-            <p class="member-email">{{ getPrimaryEmail(member) }}</p>
-            <p v-if="member.attributes?.jobTitle?.default" class="member-title">
-              {{ member.attributes.jobTitle.default }}
-            </p>
-          </div>
-          
-          <div v-if="member.organizations?.length" class="member-orgs">
-            <el-tag 
-              v-for="org in member.organizations.slice(0, 2)" 
-              :key="org.id"
-              size="small"
-              type="info"
-            >
-              {{ org.displayName || org.name }}
-            </el-tag>
-            <span v-if="member.organizations.length > 2" class="more-orgs">
-              +{{ member.organizations.length - 2 }}
-            </span>
-          </div>
-
-          <div class="member-stats">
-            <div class="stat">
-              <span class="stat-num">{{ member.activityCount || 0 }}</span>
-              <span class="stat-label">Activities</span>
-            </div>
-            <div class="stat">
-              <span class="stat-num">{{ member.score || 0 }}</span>
-              <span class="stat-label">Score</span>
-            </div>
-            <div class="stat">
-              <span class="stat-num">{{ formatDate(member.lastActive) }}</span>
-              <span class="stat-label">Last Active</span>
-            </div>
-          </div>
-
-          <div class="member-actions">
-            <el-button size="small" @click="viewProfile(member)">View Profile</el-button>
-            <router-link :to="{ name: 'memberView', params: { id: member.id } }">
-              <el-button size="small" type="primary" plain>View in Contacts</el-button>
+      <div class="page-header">
+        <div class="header-left">
+          <h1>Team</h1>
+          <div class="datasource-info">
+            <span class="datasource-label">Data source:</span>
+            <router-link :to="contactsPageUrl" class="datasource-link">
+              <span class="ri-contacts-line"></span>
+              Contacts (Team Members)
             </router-link>
           </div>
         </div>
+        <div class="header-actions">
+          <el-select
+            v-model="selectedOrganization"
+            placeholder="Filter by organization"
+            clearable
+            style="width: 200px; margin-right: 12px"
+            @change="handleOrganizationChange"
+          >
+            <el-option
+              v-for="org in organizations"
+              :key="org.id"
+              :label="org.displayName || org.name"
+              :value="org.id"
+            />
+          </el-select>
+          <el-input
+            v-model="searchQuery"
+            placeholder="Search members..."
+            prefix-icon="Search"
+            clearable
+            style="width: 200px"
+            @input="handleSearch"
+          />
+          <el-button type="primary" style="margin-left: 12px" @click="showAddMemberDialog = true">
+            <i class="ri-user-add-line"></i> Add Team Member
+          </el-button>
+        </div>
       </div>
 
-      <div v-if="filteredMembers.length === 0 && !loading" class="empty-state">
-        <el-empty description="No team members found">
-          <template #description>
-            <p>No team members found in contacts.</p>
-          </template>
-        </el-empty>
+      <div v-if="loading" class="loading-state">
+        <el-skeleton :rows="5" animated />
       </div>
 
-      <div v-if="totalMembers > pageSize" class="pagination-wrapper">
-        <el-pagination
-          v-model:current-page="currentPage"
-          :page-size="pageSize"
-          :total="totalMembers"
-          layout="prev, pager, next"
-          @current-change="handlePageChange"
-        />
-      </div>
+      <template v-else>
+        <div class="team-stats">
+          <div class="stat-card">
+            <div class="stat-value">{{ totalMembers }}</div>
+            <div class="stat-label">Team Members</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ analytics.issuesCompleted || 0 }}</div>
+            <div class="stat-label">Issues Completed</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ analytics.avgVelocity || 0 }}</div>
+            <div class="stat-label">Avg Velocity</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ analytics.avgCycleTime || 0 }}d</div>
+            <div class="stat-label">Avg Cycle Time</div>
+          </div>
+        </div>
+
+        <div class="team-grid">
+          <div v-for="member in filteredMembers" :key="member.id" class="member-card" :class="{ 'is-current-user': isCurrentUser(member) }">
+            <div class="member-avatar">
+              <el-avatar :size="64" :src="member.attributes?.avatarUrl?.default">
+                {{ getInitials(member) }}
+              </el-avatar>
+            </div>
+            <div class="member-info">
+              <h3 class="member-name">
+                {{ member.displayName || member.fullName || getPrimaryEmail(member) || 'Unknown' }}
+                <span v-if="isCurrentUser(member)" class="me-badge">(You)</span>
+              </h3>
+              <p class="member-email">{{ getPrimaryEmail(member) }}</p>
+              <p v-if="member.attributes?.jobTitle?.default" class="member-title">
+                {{ member.attributes.jobTitle.default }}
+              </p>
+            </div>
+            
+            <div v-if="member.organizations?.length" class="member-orgs">
+              <el-tag 
+                v-for="org in member.organizations.slice(0, 2)" 
+                :key="org.id"
+                size="small"
+                type="info"
+              >
+                {{ org.displayName || org.name }}
+              </el-tag>
+              <span v-if="member.organizations.length > 2" class="more-orgs">
+                +{{ member.organizations.length - 2 }}
+              </span>
+            </div>
+
+            <div class="member-stats">
+              <div class="stat">
+                <span class="stat-num">{{ member.activityCount || 0 }}</span>
+                <span class="stat-label">Activities</span>
+              </div>
+              <div class="stat">
+                <span class="stat-num">{{ member.score || 0 }}</span>
+                <span class="stat-label">Score</span>
+              </div>
+              <div class="stat">
+                <span class="stat-num">{{ formatDate(member.lastActive) }}</span>
+                <span class="stat-label">Last Active</span>
+              </div>
+            </div>
+
+            <div class="member-actions">
+              <el-button size="small" @click="viewProfile(member)">View Profile</el-button>
+              <router-link :to="{ name: 'memberView', params: { id: member.id } }">
+                <el-button size="small" type="primary" plain>View in Contacts</el-button>
+              </router-link>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="filteredMembers.length === 0 && !loading" class="empty-state">
+          <el-empty description="No team members found">
+            <template #description>
+              <p>No team members found in contacts.</p>
+            </template>
+          </el-empty>
+        </div>
+
+        <div v-if="totalMembers > pageSize" class="pagination-wrapper">
+          <el-pagination
+            v-model:current-page="currentPage"
+            :page-size="pageSize"
+            :total="totalMembers"
+            layout="prev, pager, next"
+            @current-change="handlePageChange"
+          />
+        </div>
+      </template>
     </template>
 
     <!-- Add Team Member Dialog -->
@@ -215,9 +233,9 @@ import { ElMessage } from 'element-plus';
 export default {
   name: 'TeamPage',
   setup() {
-    const { activeProjectId } = useProject();
+    const { activeProjectId, hasActiveProject } = useProject();
     const { currentUser, currentUserEmail, currentTenant } = mapGetters('auth');
-    return { activeProjectId, currentUser, currentUserEmail, currentTenant };
+    return { activeProjectId, hasActiveProject, currentUser, currentUserEmail, currentTenant };
   },
   data() {
     return {
@@ -247,6 +265,17 @@ export default {
   computed: {
     projectId() {
       return this.activeProjectId;
+    },
+    // Check if we have any projects at all
+    hasAnyProjects() {
+      const projects = this.$store.getters['devspace/projects'] || [];
+      return projects.length > 0;
+    },
+    // Check if we should show content (has projects AND has active project)
+    shouldShowContent() {
+      const hasProjects = this.hasAnyProjects;
+      const hasActiveId = !!(this.activeProjectId || this.$store.getters['devspace/activeProjectId']);
+      return hasProjects && hasActiveId;
     },
     filteredMembers() {
       let members = this.teamMembers;
@@ -281,8 +310,40 @@ export default {
     },
   },
   mounted() {
-    this.fetchTeam();
-    this.fetchOrganizations();
+    if (this.shouldShowContent) {
+      this.fetchTeam();
+      this.fetchOrganizations();
+    }
+  },
+  watch: {
+    shouldShowContent: {
+      handler(shouldShow) {
+        if (shouldShow) {
+          this.fetchTeam();
+          this.fetchOrganizations();
+        } else {
+          // Reset data when no project is available
+          this.teamMembers = [];
+          this.totalMembers = 0;
+          this.analytics = {
+            issuesCompleted: 0,
+            avgVelocity: 0,
+            avgCycleTime: 0,
+          };
+        }
+      },
+      immediate: false,
+    },
+    activeProjectId: {
+      handler(newProjectId, oldProjectId) {
+        // Only refetch if project actually changed (not just initial load)
+        if (newProjectId && newProjectId !== oldProjectId && this.shouldShowContent) {
+          this.fetchTeam();
+          this.fetchOrganizations();
+        }
+      },
+      immediate: false,
+    },
   },
   methods: {
     isCurrentUser(member) {
@@ -442,6 +503,35 @@ export default {
 
 <style scoped>
 @import '../styles/devspace-common.css';
+
+.no-project-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  background: var(--el-bg-color);
+  border-radius: 8px;
+  border: 1px dashed var(--el-border-color);
+}
+
+.empty-state-content {
+  text-align: center;
+  max-width: 400px;
+}
+
+.empty-state-content h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.empty-state-content p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--el-text-color-secondary);
+  line-height: 1.5;
+}
 
 .team-page { padding: 24px; }
 .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
