@@ -584,17 +584,21 @@ export default class DevtelCycleService extends LoggerBase {
             const now = new Date()
             const permanentDeleteDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
 
-            this.log.info(`[DevtelCycleService] Setting deletedAt=${now}, archivedAt=${now}, permanentDeleteAt=${permanentDeleteDate}`)
+            this.log.info(`[DevtelCycleService] Setting archivedAt=${now}, permanentDeleteAt=${permanentDeleteDate}`)
 
+            // First set the archive fields
             await cycle.update(
                 {
-                    deletedAt: now,
                     archivedAt: now,
                     permanentDeleteAt: permanentDeleteDate,
                     updatedById: this.options.currentUser?.id,
                 },
                 { transaction },
             )
+
+            // Then use Sequelize's destroy() which properly handles paranoid mode
+            // This will set deletedAt automatically
+            await cycle.destroy({ transaction })
 
             await SequelizeRepository.commitTransaction(transaction)
 
@@ -646,6 +650,7 @@ export default class DevtelCycleService extends LoggerBase {
      * Restore an archived cycle
      */
     async restore(projectId: string, cycleId: string) {
+        this.log.info(`[DevtelCycleService] restore called for cycle ${cycleId} in project ${projectId}`)
         const transaction = await SequelizeRepository.createTransaction(this.options)
 
         try {
@@ -656,16 +661,22 @@ export default class DevtelCycleService extends LoggerBase {
                     archivedAt: { [Op.ne]: null },
                 },
                 transaction,
-                paranoid: false,
+                paranoid: false, // Include soft-deleted records
             })
 
             if (!cycle) {
+                this.log.warn(`[DevtelCycleService] Cycle ${cycleId} not found for restore`)
                 throw new Error400(this.options.language, 'devtel.cycle.notFound')
             }
 
+            this.log.info(`[DevtelCycleService] Found archived cycle: ${cycle.name}, restoring...`)
+
+            // Use Sequelize's restore() method for paranoid models
+            await cycle.restore({ transaction })
+
+            // Clear the archive fields
             await cycle.update(
                 {
-                    deletedAt: null,
                     archivedAt: null,
                     permanentDeleteAt: null,
                     updatedById: this.options.currentUser?.id,
@@ -675,8 +686,10 @@ export default class DevtelCycleService extends LoggerBase {
 
             await SequelizeRepository.commitTransaction(transaction)
 
+            this.log.info(`[DevtelCycleService] Cycle ${cycleId} restored successfully`)
             return this.findById(projectId, cycleId)
         } catch (error) {
+            this.log.error(`[DevtelCycleService] Error restoring cycle: ${error}`)
             await SequelizeRepository.rollbackTransaction(transaction)
             throw error
         }

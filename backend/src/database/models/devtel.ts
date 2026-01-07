@@ -107,11 +107,9 @@ export default (sequelize) => {
             },
             startDate: {
                 type: DataTypes.DATEONLY,
-                allowNull: false,
             },
             endDate: {
                 type: DataTypes.DATEONLY,
-                allowNull: false,
             },
             targetCapacity: {
                 type: DataTypes.DECIMAL(10, 2),

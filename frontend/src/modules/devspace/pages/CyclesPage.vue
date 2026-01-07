@@ -191,8 +191,8 @@
 
       <!-- Create Cycle Modal -->
       <el-dialog v-model="showCreateCycleModal" title="Create Cycle" width="500px">
-      <el-form :model="newCycle" label-position="top">
-        <el-form-item label="Name" required>
+      <el-form :model="newCycle" :rules="cycleFormRules" ref="createCycleFormRef" label-position="top">
+        <el-form-item label="Name" prop="name" required>
           <el-input v-model="newCycle.name" placeholder="Sprint 1" />
         </el-form-item>
         <el-form-item label="Goal">
@@ -200,20 +200,30 @@
         </el-form-item>
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="Start Date">
-              <el-date-picker v-model="newCycle.startDate" type="date" style="width: 100%" />
+            <el-form-item label="Start Date" prop="startDate" required>
+              <el-date-picker 
+                v-model="newCycle.startDate" 
+                type="date" 
+                style="width: 100%" 
+                placeholder="Select start date"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="End Date">
-              <el-date-picker v-model="newCycle.endDate" type="date" style="width: 100%" />
+            <el-form-item label="End Date" prop="endDate" required>
+              <el-date-picker 
+                v-model="newCycle.endDate" 
+                type="date" 
+                style="width: 100%"
+                placeholder="Select end date"
+              />
             </el-form-item>
           </el-col>
         </el-row>
       </el-form>
       <template #footer>
         <el-button @click="showCreateCycleModal = false">Cancel</el-button>
-        <el-button type="primary" @click="createCycle">Create</el-button>
+        <el-button type="primary" @click="createCycle" :loading="isCreating">Create</el-button>
       </template>
     </el-dialog>
 
@@ -364,7 +374,21 @@ export default {
     const viewingCycle = ref(null);
     const isUpdating = ref(false);
     const isRefreshing = ref(false);
+    const isCreating = ref(false);
+    const createCycleFormRef = ref(null);
     const newCycle = ref({ name: '', goal: '', startDate: null, endDate: null });
+    
+    const cycleFormRules = {
+      name: [
+        { required: true, message: 'Cycle name is required', trigger: 'blur' }
+      ],
+      startDate: [
+        { required: true, message: 'Start date is required', trigger: 'change' }
+      ],
+      endDate: [
+        { required: true, message: 'End date is required', trigger: 'change' }
+      ]
+    };
 
     const activeCycle = computed(() => store.getters['cycles/activeCycle']);
     const plannedCycles = computed(() => store.getters['cycles/plannedCycles']);
@@ -499,13 +523,32 @@ export default {
     };
 
     const createCycle = async () => {
+      // Validate form first
+      if (createCycleFormRef.value) {
+        try {
+          await createCycleFormRef.value.validate();
+        } catch (validationError) {
+          return; // Form validation failed, don't proceed
+        }
+      }
+      
+      // Check dates manually as well
+      if (!newCycle.value.startDate || !newCycle.value.endDate) {
+        ElMessage.error('Please select both start and end dates');
+        return;
+      }
+      
+      isCreating.value = true;
       try {
         await store.dispatch('cycles/createCycle', newCycle.value);
         showCreateCycleModal.value = false;
         newCycle.value = { name: '', goal: '', startDate: null, endDate: null };
         ElMessage.success('Cycle created');
       } catch (error) {
+        console.error('Failed to create cycle:', error);
         ElMessage.error('Failed to create cycle');
+      } finally {
+        isCreating.value = false;
       }
     };
 
@@ -675,6 +718,9 @@ export default {
       viewingCycle,
       isUpdating,
       isRefreshing,
+      isCreating,
+      createCycleFormRef,
+      cycleFormRules,
       newCycle,
       activeCycle,
       plannedCycles,

@@ -219,9 +219,17 @@ export default class DevtelService {
     static async createCycle(projectId, data) {
         return withErrorHandling(async () => {
             const tenantId = getTenantId();
+            console.log('[DevtelService] createCycle input data:', data);
+            // Convert Date objects to ISO strings for backend validation
+            const payload = {
+                ...data,
+                startDate: data.startDate ? (data.startDate instanceof Date ? data.startDate.toISOString() : data.startDate) : null,
+                endDate: data.endDate ? (data.endDate instanceof Date ? data.endDate.toISOString() : data.endDate) : null,
+            };
+            console.log('[DevtelService] createCycle payload:', payload);
             const response = await authAxios.post(
                 `/tenant/${tenantId}/devtel/projects/${projectId}/cycles`,
-                data
+                payload
             );
             return response.data;
         }, 'Create Cycle');
