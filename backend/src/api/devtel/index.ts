@@ -52,6 +52,10 @@ export default (app) => {
         `/tenant/:tenantId/devtel/projects/:projectId`,
         safeWrap(require('./projects/projectDestroy').default),
     )
+    app.get(
+        `/tenant/:tenantId/devtel/projects/:projectId/overview`,
+        safeWrap(require('./projects/projectOverview').default),
+    )
 
     // ============================================
     // Issue Routes
@@ -166,6 +170,10 @@ export default (app) => {
         `/tenant/:tenantId/devtel/capacity/assignments/:assignmentId`,
         safeWrap(require('./capacity/assignmentUpdate').default),
     )
+    app.get(
+        `/tenant/:tenantId/devtel/projects/:projectId/capacity/contributions`,
+        safeWrap(require('./capacity/contributionActivity').default),
+    )
 
     // ============================================
     // Spec Routes
@@ -250,6 +258,10 @@ export default (app) => {
     app.post(
         `/tenant/:tenantId/devtel/settings/integrations`,
         safeWrap(require('./settings/integrationCreate').default),
+    )
+    app.put(
+        `/tenant/:tenantId/devtel/settings/integrations/:integrationId`,
+        safeWrap(require('./settings/integrationUpdate').default),
     )
     app.delete(
         `/tenant/:tenantId/devtel/settings/integrations/:integrationId`,

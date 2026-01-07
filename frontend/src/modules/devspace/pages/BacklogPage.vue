@@ -38,7 +38,7 @@
     </div>
 
     <!-- Quick Create -->
-    <div class="quick-create">
+    <div v-if="hasActiveProject" class="quick-create">
       <el-input
         v-model="quickCreateTitle"
         placeholder="Create new issue..."
@@ -51,21 +51,28 @@
       </el-input>
     </div>
 
+    <!-- No Project State -->
+    <div v-if="!hasActiveProject" class="no-project-state">
+      <div class="no-project-content">
+        <i class="ri-folder-add-line no-project-icon"></i>
+        <h2>No Project Connected</h2>
+        <p>Connect a project to start managing your backlog and tracking issues.</p>
+      </div>
+    </div>
+
     <!-- Loading State -->
-    <table-skeleton v-if="isLoading" />
+    <table-skeleton v-if="hasActiveProject && isLoading" />
 
     <!-- Empty State -->
     <empty-state
-      v-else-if="!isLoading && filteredIssues.length === 0"
+      v-else-if="hasActiveProject && !isLoading && filteredIssues.length === 0"
       icon="ri-file-list-3-line"
       title="No issues in backlog"
-      description="Start by creating your first issue. Use the quick create input above or click the button below."
-      action-text="Create Issue"
-      @action="$emit('create-issue')"
+      description="Start by creating your first issue."
     />
 
     <!-- Issues Table -->
-    <div v-else class="backlog-content">
+    <div v-else-if="hasActiveProject" class="backlog-content">
       <el-table 
         :data="filteredIssues" 
         v-loading="isLoading" 
@@ -81,12 +88,24 @@
           </template>
         </el-table-column>
         <el-table-column prop="title" label="Title" min-width="200" sortable />
-        <el-table-column prop="status" label="Status" width="120" sortable>
+        <el-table-column 
+          prop="status" 
+          label="Status" 
+          width="120" 
+          sortable 
+          :sort-method="(a, b) => getStatusOrder(a.status) - getStatusOrder(b.status)"
+        >
           <template #default="{ row }">
             <el-tag size="small">{{ formatStatus(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="priority" label="Priority" width="100" sortable>
+        <el-table-column 
+          prop="priority" 
+          label="Priority" 
+          width="100" 
+          sortable
+          :sort-method="(a, b) => getPriorityOrder(a.priority) - getPriorityOrder(b.priority)"
+        >
           <template #default="{ row }">
             <span :class="['priority-badge', `priority-${row.priority}`]">
               {{ row.priority }}
@@ -205,6 +224,22 @@ const { activeProjectId, hasActiveProject } = useProject();
     const teamMembers = computed(() => store.getters['devspace/teamMembers']);
     // Only users (not contacts) can be assigned to issues
     const assignableMembers = computed(() => teamMembers.value.filter(m => m.isUser !== false));
+
+    // Status workflow order for sorting
+    const STATUS_ORDER = ['backlog', 'todo', 'in_progress', 'review', 'done'];
+    
+    const getStatusOrder = (status) => {
+      const index = STATUS_ORDER.indexOf(status);
+      return index === -1 ? 999 : index; // Unknown statuses go to the end
+    };
+
+    // Priority order for sorting (highest to lowest urgency)
+    const PRIORITY_ORDER = ['urgent', 'high', 'medium', 'low'];
+    
+    const getPriorityOrder = (priority) => {
+      const index = PRIORITY_ORDER.indexOf(priority);
+      return index === -1 ? 999 : index; // Unknown priorities go to the end
+    };
 
     // Initial simple filtering (can be expanded)
     const filteredIssues = computed(() => issues.value);
@@ -567,5 +602,39 @@ const setupSocketListeners = () => {
 
 :deep(.issue-drawer .el-drawer__close-btn:hover) {
   color: var(--el-text-color-primary);
+}
+
+/* No Project State */
+.no-project-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: 40px;
+}
+
+.no-project-content {
+  text-align: center;
+  max-width: 400px;
+}
+
+.no-project-icon {
+  font-size: 64px;
+  color: var(--el-text-color-placeholder);
+  margin-bottom: 24px;
+}
+
+.no-project-content h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: var(--el-text-color-primary);
+}
+
+.no-project-content p {
+  font-size: 14px;
+  color: var(--el-text-color-secondary);
+  margin: 0 0 24px 0;
+  line-height: 1.6;
 }
 </style>

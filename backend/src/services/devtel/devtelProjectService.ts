@@ -7,6 +7,7 @@ import { LoggerBase } from '@gitmesh/logging'
 import { IServiceOptions } from '../IServiceOptions'
 import SequelizeRepository from '../../database/repositories/sequelizeRepository'
 import DevtelWorkspaceService from './devtelWorkspaceService'
+import { sendNodeWorkerMessage } from '../../serverless/utils/nodeWorkerSQS'
 
 export interface ProjectCreateData {
     name: string
@@ -198,6 +199,33 @@ export default class DevtelProjectService extends LoggerBase {
 
             await SequelizeRepository.commitTransaction(transaction)
 
+            // Trigger GitHub Sync if repo is configured
+            if (data.settings?.githubRepo) {
+               try {
+                   const integration = await this.options.database.devtelIntegrations.findOne({
+                        where: {
+                            workspaceId: workspace.id,
+                            provider: 'github',
+                            deletedAt: null
+                        }
+                   });
+                   
+                   if (integration) {
+                       this.log.info({ projectId: id, repo: data.settings.githubRepo }, 'Triggering repository backfill');
+                       await sendNodeWorkerMessage(this.options.currentTenant.id, {
+                           service: 'devtel-sync-external',
+                           tenant: this.options.currentTenant.id,
+                           workspaceId: workspace.id,
+                           integrationId: integration.id,
+                           provider: 'github',
+                           syncType: 'full'
+                       } as any); 
+                   }
+               } catch (syncError) {
+                   this.log.error({ error: syncError }, 'Failed to trigger initial sync');
+               }
+            }
+
             return this.findById(id)
         } catch (error) {
             await SequelizeRepository.rollbackTransaction(transaction)
@@ -228,13 +256,8 @@ export default class DevtelProjectService extends LoggerBase {
                 throw new Error400(this.options.language, 'devtel.project.notFound')
             }
 
-            await project.update(
-                {
-                    deletedAt: new Date(),
-                    updatedById: this.options.currentUser?.id,
-                },
-                { transaction },
-            )
+            // Permanently delete the project and all associated data (via DB Cascade)
+            await project.destroy({ transaction, force: true })
 
             await SequelizeRepository.commitTransaction(transaction)
 

@@ -77,6 +77,12 @@ export default class DevtelService {
         return response.data;
     }
 
+    static async getProjectOverview(projectId, params = {}) {
+        const tenantId = getTenantId();
+        const response = await authAxios.get(`/tenant/${tenantId}/devtel/projects/${projectId}/overview`, { params });
+        return response.data;
+    }
+
     // ============================================
     // Issues
     // ============================================
@@ -538,6 +544,15 @@ export default class DevtelService {
         const tenantId = getTenantId();
         const response = await authAxios.post(
             `/tenant/${tenantId}/devtel/settings/integrations`,
+            data
+        );
+        return response.data;
+    }
+
+    static async updateIntegration(workspaceId, integrationId, data) {
+        const tenantId = getTenantId();
+        const response = await authAxios.put(
+            `/tenant/${tenantId}/devtel/settings/integrations/${integrationId}`,
             data
         );
         return response.data;

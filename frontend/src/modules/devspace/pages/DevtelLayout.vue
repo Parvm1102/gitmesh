@@ -2,38 +2,28 @@
   <loading-bar />
   <error-boundary>
     <div class="devtel-layout">
-    <header class="devtel-header">
+    <header v-if="!shouldHideHeader" class="devtel-header">
       <div class="header-left">
         <div class="app-title">
           <i v-if="pageIcon" :class="pageIcon" class="mr-2"></i>
           <span>{{ pageTitle }}</span>
-        </div>
-        
-        <div class="project-selector-wrapper">
-          <project-selector />
         </div>
       </div>
       
       <div class="header-actions">
         <connection-status class="mr-3" />
         <el-button 
+          v-if="!isSettingsPage && activeProjectId"
           type="primary" 
           icon="ri-add-line"
           @click="openNewIssueModal"
         >
           New Issue
         </el-button>
-        <el-button 
-          plain
-          icon="ri-folder-add-line"
-          @click="openNewProjectModal"
-        >
-          New Project
-        </el-button>
       </div>
     </header>
 
-    <div class="devtel-content">
+    <div class="devtel-content" :class="{ 'no-header': shouldHideHeader }">
       <router-view :key="activeProjectId" />
     </div>
 
@@ -58,7 +48,6 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRoute } from 'vue-router';
 import { ElMessage, ElNotification } from 'element-plus';
-import ProjectSelector from '../components/ProjectSelector.vue';
 import ConnectionStatus from '../components/ConnectionStatus.vue';
 import { devtelSocket } from '../services/devtel-socket';
 import IssueFormModal from '../components/IssueFormModal.vue';
@@ -73,6 +62,28 @@ const showNewIssueModal = ref(false);
 const showNewProjectModal = ref(false);
 
 const activeProjectId = computed(() => store.getters['devspace/activeProjectId']);
+
+const isSettingsPage = computed(() => {
+  return route.path.includes('/devspace/project-settings');
+});
+
+const isProjectSettingsPage = computed(() => {
+  return route.name === 'devspace-project-settings';
+});
+
+const pagesWithoutHeader = [
+  'devspace-project-settings',
+  'devspace-team',
+  'devspace-specs', 
+  'devspace-capacity',
+  'devspace-cycles',
+  'devspace-overview',
+  'devspace-devtel'
+];
+
+const shouldHideHeader = computed(() => {
+  return pagesWithoutHeader.includes(route.name);
+});
 
 const pageTitle = computed(() => {
   return route.meta.title || 'DevSpace';
@@ -113,6 +124,12 @@ watch(activeProjectId, (newId, oldId) => {
 // Initialize WebSocket connection on mount
 onMounted(() => {
   console.log('[DevSpace] Layout mounted, initializing socket connection');
+  
+  // Initialize devspace store if not already done
+  if (!store.getters['devspace/projects'] || store.getters['devspace/projects'].length === 0) {
+    store.dispatch('devspace/initialize');
+  }
+  
   // Connect to Socket.IO
   devtelSocket.connect();
   
@@ -126,12 +143,28 @@ onMounted(() => {
   if (activeProjectId.value) {
     devtelSocket.joinProject(activeProjectId.value);
   }
+
+  // Listen for global events to open modals from sidebar
+  const handleGlobalNewProjectEvent = () => {
+    showNewProjectModal.value = true;
+  };
+  
+  window.addEventListener('devspace:open-new-project-modal', handleGlobalNewProjectEvent);
+  
+  // Store the handler for cleanup
+  window._devspaceNewProjectHandler = handleGlobalNewProjectEvent;
 });
 
 // Disconnect WebSocket on unmount
 onUnmounted(() => {
   console.log('[DevSpace] Layout unmounted, disconnecting socket');
   devtelSocket.disconnect();
+  
+  // Clean up event listener
+  if (window._devspaceNewProjectHandler) {
+    window.removeEventListener('devspace:open-new-project-modal', window._devspaceNewProjectHandler);
+    delete window._devspaceNewProjectHandler;
+  }
 });
 
 // Watch for active project changes and update room membership
@@ -227,5 +260,9 @@ watch(activeProjectId, (newProjectId, oldProjectId) => {
   position: relative;
   background-color: var(--el-bg-color-page);
   padding: 24px;
+}
+
+.devtel-content.no-header {
+  padding: 24px 24px 24px 24px;
 }
 </style>
