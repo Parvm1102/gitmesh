@@ -5,6 +5,7 @@
       <label class="project-label">Project</label>
       <el-select 
         v-model="activeProjectId" 
+        :key="componentKey"
         placeholder="Select Project" 
         filterable 
         class="project-selector w-full"
@@ -52,7 +53,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
 
 defineProps({
@@ -71,10 +72,23 @@ const activeProjectId = computed({
 
 const projects = computed(() => store.getters['devspace/projects'] || []);
 
+// Compute a key that changes when the active project name changes to force re-render of label
+const componentKey = computed(() => {
+  const active = projects.value.find(p => p.id === activeProjectId.value);
+  return active ? `${active.id}-${active.name}` : 'default';
+});
+
 const openNewProjectModal = () => {
   // Dispatch global event to open modal in DevtelLayout
   window.dispatchEvent(new CustomEvent('devspace:open-new-project-modal'));
 };
+
+// Initialize projects on mount if not already loaded
+onMounted(() => {
+  if (projects.value.length === 0) {
+    store.dispatch('devspace/fetchProjects');
+  }
+});
 </script>
 
 <style lang="scss" scoped>

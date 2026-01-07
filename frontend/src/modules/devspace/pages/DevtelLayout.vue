@@ -2,7 +2,7 @@
   <loading-bar />
   <error-boundary>
     <div class="devtel-layout">
-    <header class="devtel-header">
+    <header v-if="!isProjectSettingsPage" class="devtel-header">
       <div class="header-left">
         <div class="app-title">
           <i v-if="pageIcon" :class="pageIcon" class="mr-2"></i>
@@ -23,7 +23,7 @@
       </div>
     </header>
 
-    <div class="devtel-content">
+    <div class="devtel-content" :class="{ 'no-header': isProjectSettingsPage }">
       <router-view :key="activeProjectId" />
     </div>
 
@@ -64,7 +64,11 @@ const showNewProjectModal = ref(false);
 const activeProjectId = computed(() => store.getters['devspace/activeProjectId']);
 
 const isSettingsPage = computed(() => {
-  return route.path.includes('/devspace/settings');
+  return route.path.includes('/devspace/project-settings');
+});
+
+const isProjectSettingsPage = computed(() => {
+  return route.name === 'devspace-project-settings';
 });
 
 const pageTitle = computed(() => {
@@ -106,6 +110,12 @@ watch(activeProjectId, (newId, oldId) => {
 // Initialize WebSocket connection on mount
 onMounted(() => {
   console.log('[DevSpace] Layout mounted, initializing socket connection');
+  
+  // Initialize devspace store if not already done
+  if (!store.getters['devspace/projects'] || store.getters['devspace/projects'].length === 0) {
+    store.dispatch('devspace/initialize');
+  }
+  
   // Connect to Socket.IO
   devtelSocket.connect();
   
@@ -236,5 +246,9 @@ watch(activeProjectId, (newProjectId, oldProjectId) => {
   position: relative;
   background-color: var(--el-bg-color-page);
   padding: 24px;
+}
+
+.devtel-content.no-header {
+  padding: 0;
 }
 </style>
