@@ -239,11 +239,14 @@ export default class DevtelService {
     }
 
     static async deleteCycle(projectId, cycleId) {
+        console.log('[DevtelService] deleteCycle called with projectId:', projectId, 'cycleId:', cycleId);
         return withErrorHandling(async () => {
             const tenantId = getTenantId();
+            console.log('[DevtelService] Making DELETE request to:', `/tenant/${tenantId}/devtel/projects/${projectId}/cycles/${cycleId}`);
             const response = await authAxios.delete(
                 `/tenant/${tenantId}/devtel/projects/${projectId}/cycles/${cycleId}`
             );
+            console.log('[DevtelService] DELETE response:', response.data);
             return response.data;
         }, 'Delete Cycle');
     }
@@ -265,6 +268,16 @@ export default class DevtelService {
             );
             return response.data;
         }, 'Restore Cycle');
+    }
+
+    static async permanentDeleteCycle(projectId, cycleId) {
+        return withErrorHandling(async () => {
+            const tenantId = getTenantId();
+            const response = await authAxios.delete(
+                `/tenant/${tenantId}/devtel/projects/${projectId}/cycles/${cycleId}/permanent`
+            );
+            return response.data;
+        }, 'Permanently Delete Cycle');
     }
 
     static async getCycleBurndown(projectId, cycleId) {

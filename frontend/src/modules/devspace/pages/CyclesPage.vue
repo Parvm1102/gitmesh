@@ -630,6 +630,7 @@ export default {
     };
 
     const deleteCycle = async (cycle) => {
+      console.log('[CyclesPage] deleteCycle called for:', cycle.id, cycle.name);
       try {
         await ElMessageBox.confirm(
           `Are you sure you want to delete "${cycle.name}"? It will be archived for 30 days before permanent deletion.`,
@@ -641,13 +642,26 @@ export default {
           }
         );
         
-        await DevtelService.deleteCycle(activeProjectId.value, cycle.id);
-        await store.dispatch('cycles/fetchCycles', activeProjectId.value);
+        console.log('[CyclesPage] User confirmed delete');
+        
+        if (!activeProjectId.value) {
+          console.error('[CyclesPage] No project selected');
+          ElMessage.error('No project selected');
+          return;
+        }
+        
+        console.log('[CyclesPage] Calling store.dispatch cycles/deleteCycle with cycleId:', cycle.id);
+        const result = await store.dispatch('cycles/deleteCycle', cycle.id);
+        console.log('[CyclesPage] Delete result:', result);
         ElMessage.success('Cycle archived. It will be permanently deleted in 30 days.');
       } catch (error) {
-        if (error !== 'cancel') {
-          ElMessage.error('Failed to delete cycle');
+        // ElMessageBox.confirm throws 'cancel' when user clicks Cancel
+        if (error === 'cancel') {
+          console.log('[CyclesPage] User cancelled delete');
+          return;
         }
+        console.error('[CyclesPage] Failed to delete cycle:', error);
+        ElMessage.error('Failed to delete cycle');
       }
     };
 

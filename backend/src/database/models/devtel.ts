@@ -102,14 +102,19 @@ export default (sequelize) => {
                 type: DataTypes.TEXT,
             },
             status: {
-                type: DataTypes.STRING(20),
+                type: DataTypes.STRING(50),
                 defaultValue: 'planned',
             },
             startDate: {
                 type: DataTypes.DATEONLY,
+                allowNull: false,
             },
             endDate: {
                 type: DataTypes.DATEONLY,
+                allowNull: false,
+            },
+            targetCapacity: {
+                type: DataTypes.DECIMAL(10, 2),
             },
             velocity: {
                 type: DataTypes.INTEGER,
@@ -117,6 +122,18 @@ export default (sequelize) => {
             storyPointsCompleted: {
                 type: DataTypes.INTEGER,
                 defaultValue: 0,
+            },
+            archivedAt: {
+                type: DataTypes.DATE,
+            },
+            permanentDeleteAt: {
+                type: DataTypes.DATE,
+            },
+            createdById: {
+                type: DataTypes.UUID,
+            },
+            updatedById: {
+                type: DataTypes.UUID,
             },
         },
         {
