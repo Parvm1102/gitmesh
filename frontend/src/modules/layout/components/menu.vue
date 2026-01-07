@@ -15,6 +15,9 @@
 
         <!-- Menu items -->
         <template v-if="selectedTop !== 'chat'">
+          <!-- Devspace Project Selector (only in devspace mode) -->
+          <cr-menu-devspace-project v-if="selectedTop === 'devspace'" :collapsed="isCollapsed" />
+          
           <cr-menu-links class="mb-2" :links="currentMainMenu" :collapsed="isCollapsed" link-class="text-sm" />
           <div class="border-t border-zinc-700 mb-4" />
           <cr-menu-links :links="currentBottomMenu" :collapsed="isCollapsed" link-class="text-sm" />
@@ -69,6 +72,7 @@ import { useTopNavStore } from '@/modules/layout/store/topNav';
 import CrMenuSupport from '@/modules/layout/components/menu/menu-support.vue';
 import CrMenuQuickstart from '@/modules/layout/components/menu/menu-quickstart.vue';
 import CrChatSidebar from '@/modules/layout/components/menu/menu-chat-sidebar.vue';
+import CrMenuDevspaceProject from '@/modules/layout/components/menu/menu-devspace-project.vue';
 import { FeatureFlag } from '@/utils/featureFlag';
 
 const store = useStore();

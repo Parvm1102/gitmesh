@@ -8,10 +8,6 @@
           <i v-if="pageIcon" :class="pageIcon" class="mr-2"></i>
           <span>{{ pageTitle }}</span>
         </div>
-        
-        <div class="project-selector-wrapper">
-          <project-selector />
-        </div>
       </div>
       
       <div class="header-actions">
@@ -23,13 +19,6 @@
           @click="openNewIssueModal"
         >
           New Issue
-        </el-button>
-        <el-button 
-          plain
-          icon="ri-folder-add-line"
-          @click="openNewProjectModal"
-        >
-          New Project
         </el-button>
       </div>
     </header>
@@ -59,7 +48,6 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRoute } from 'vue-router';
 import { ElMessage, ElNotification } from 'element-plus';
-import ProjectSelector from '../components/ProjectSelector.vue';
 import ConnectionStatus from '../components/ConnectionStatus.vue';
 import { devtelSocket } from '../services/devtel-socket';
 import IssueFormModal from '../components/IssueFormModal.vue';
@@ -131,12 +119,28 @@ onMounted(() => {
   if (activeProjectId.value) {
     devtelSocket.joinProject(activeProjectId.value);
   }
+
+  // Listen for global events to open modals from sidebar
+  const handleGlobalNewProjectEvent = () => {
+    showNewProjectModal.value = true;
+  };
+  
+  window.addEventListener('devspace:open-new-project-modal', handleGlobalNewProjectEvent);
+  
+  // Store the handler for cleanup
+  window._devspaceNewProjectHandler = handleGlobalNewProjectEvent;
 });
 
 // Disconnect WebSocket on unmount
 onUnmounted(() => {
   console.log('[DevSpace] Layout unmounted, disconnecting socket');
   devtelSocket.disconnect();
+  
+  // Clean up event listener
+  if (window._devspaceNewProjectHandler) {
+    window.removeEventListener('devspace:open-new-project-modal', window._devspaceNewProjectHandler);
+    delete window._devspaceNewProjectHandler;
+  }
 });
 
 // Watch for active project changes and update room membership
